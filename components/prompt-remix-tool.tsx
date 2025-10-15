@@ -133,7 +133,7 @@ export default function PromptRemixTool({ originalPrompt }: PromptRemixToolProps
             key={index}
             variant="outline"
             onClick={() => remixPrompt(option.options)}
-            disabled={isRemixing || !prompt.trim()}
+            disabled={isRemixing || !prompt?.trim()}
             className="h-auto p-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 hover:shadow-lg transition-all duration-300"
           >
             <div className="text-center">
@@ -235,7 +235,7 @@ export default function PromptRemixTool({ originalPrompt }: PromptRemixToolProps
 
           <Button
             onClick={() => remixPrompt()}
-            disabled={isRemixing || !prompt.trim()}
+            disabled={isRemixing || !prompt?.trim()}
             className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
           >
             {isRemixing ? (
