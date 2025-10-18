@@ -37,11 +37,18 @@ const PromptSchema = new Schema(
       default: "other",
     },
     difficulty: {
-      type: String,
-      enum: ["beginner", "intermediate", "advanced"],
-      default: "beginner",
-    },
+  type: String,
+  enum: ["beginner", "medium", "hard"],
+  default: "beginner",
+  required: true,
+},
     likes: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    saves: [
       {
         type: Schema.Types.ObjectId,
         ref: "User",
@@ -51,7 +58,6 @@ const PromptSchema = new Schema(
       type: String,
     },
     sampleOutputImage: {
-      // New field for sample output image
       type: String,
     },
     isTemplate: {

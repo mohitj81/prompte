@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,24 +16,33 @@ interface PromptFormProps {
     prompt: string
     tags: string[]
     sampleResult?: string
+    category?: string
   }
   onSubmit: (data: {
     title: string
     prompt: string
     tags: string[]
     sampleResult?: string
+    category?: string
   }) => void
   isSubmitting: boolean
   submitButtonText: string
 }
 
-export default function PromptForm({ initialData, onSubmit, isSubmitting, submitButtonText }: PromptFormProps) {
+export default function PromptForm({
+  initialData,
+  onSubmit,
+  isSubmitting,
+  submitButtonText,
+}: PromptFormProps) {
   const [formData, setFormData] = useState({
     title: initialData?.title || "",
     prompt: initialData?.prompt || "",
     tags: initialData?.tags || [],
     sampleResult: initialData?.sampleResult || "",
+    category: initialData?.category || "other",
   })
+
   const [tagInput, setTagInput] = useState("")
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -46,10 +54,7 @@ export default function PromptForm({ initialData, onSubmit, isSubmitting, submit
   const addTag = () => {
     const tag = tagInput.trim().toLowerCase()
     if (tag && !formData.tags.includes(tag)) {
-      setFormData((prev) => ({
-        ...prev,
-        tags: [...prev.tags, tag],
-      }))
+      setFormData((prev) => ({ ...prev, tags: [...prev.tags, tag] }))
       setTagInput("")
     }
   }
@@ -75,6 +80,7 @@ export default function PromptForm({ initialData, onSubmit, isSubmitting, submit
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Title */}
           <div className="space-y-2">
             <Label htmlFor="title">Title *</Label>
             <Input
@@ -86,6 +92,7 @@ export default function PromptForm({ initialData, onSubmit, isSubmitting, submit
             />
           </div>
 
+          {/* Prompt */}
           <div className="space-y-2">
             <Label htmlFor="prompt">Prompt *</Label>
             <Textarea
@@ -97,16 +104,16 @@ export default function PromptForm({ initialData, onSubmit, isSubmitting, submit
               required
             />
             <p className="text-sm text-gray-500">
-              Be specific and clear. Include any context or instructions that would help others use your prompt
-              effectively.
+              Be specific and clear. Include any context or instructions that would help others use your prompt effectively.
             </p>
           </div>
 
+          {/* Sample Result */}
           <div className="space-y-2">
             <Label htmlFor="sampleResult">Sample Result (Optional)</Label>
             <Textarea
               id="sampleResult"
-              placeholder="Paste an example output from your prompt to help others understand what to expect..."
+              placeholder="Paste an example output from your prompt..."
               value={formData.sampleResult}
               onChange={(e) => setFormData((prev) => ({ ...prev, sampleResult: e.target.value }))}
               rows={4}
@@ -114,6 +121,7 @@ export default function PromptForm({ initialData, onSubmit, isSubmitting, submit
             <p className="text-sm text-gray-500">Show others what kind of output your prompt generates.</p>
           </div>
 
+          {/* Tags */}
           <div className="space-y-2">
             <Label htmlFor="tags">Tags</Label>
             <div className="flex gap-2">
@@ -134,7 +142,11 @@ export default function PromptForm({ initialData, onSubmit, isSubmitting, submit
                 {formData.tags.map((tag) => (
                   <Badge key={tag} variant="secondary" className="flex items-center gap-1">
                     {tag}
-                    <button type="button" onClick={() => removeTag(tag)} className="ml-1 hover:text-red-500">
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="ml-1 hover:text-red-500"
+                    >
                       <X className="w-3 h-3" />
                     </button>
                   </Badge>
@@ -144,6 +156,29 @@ export default function PromptForm({ initialData, onSubmit, isSubmitting, submit
             <p className="text-sm text-gray-500">Add relevant tags to help others discover your prompt.</p>
           </div>
 
+          {/* Category */}
+          <div className="space-y-2">
+            <Label htmlFor="category">Category</Label>
+            <select
+              id="category"
+              value={formData.category}
+              onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
+              className="w-full border rounded p-2"
+            >
+              <option value="writing">Writing</option>
+              <option value="coding">Coding</option>
+              <option value="marketing">Marketing</option>
+              <option value="design">Design</option>
+              <option value="business">Business</option>
+              <option value="education">Education</option>
+              <option value="entertainment">Entertainment</option>
+              <option value="productivity">Productivity</option>
+              <option value="research">Research</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          {/* Submit */}
           <div className="flex gap-4 pt-4">
             <Button
               type="submit"

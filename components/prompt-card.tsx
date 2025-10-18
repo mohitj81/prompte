@@ -195,12 +195,12 @@ export default function PromptCard({
           )}
 
           <div className="flex flex-wrap gap-2">
-            {prompt.tags.slice(0, 3).map((tag) => (
+            {(prompt.tags || []).slice(0, 3).map((tag) => (
               <Badge key={tag} variant="secondary" className="text-xs">
                 {tag}
               </Badge>
             ))}
-            {prompt.tags.length > 3 && (
+            {(prompt.tags?.length || 0) > 3 && (
               <Badge variant="outline" className="text-xs">
                 +{prompt.tags.length - 3} more
               </Badge>

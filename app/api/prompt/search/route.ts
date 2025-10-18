@@ -1,38 +1,44 @@
 export const dynamic = "force-dynamic";
 
-import { NextResponse } from "next/server"
-import { connectToDB } from "@/utils/database"
-import Prompt from "@/models/prompt"
+import { NextResponse } from "next/server";
+import { connectToDB } from "@/utils/database";
+import Prompt from "@/models/prompt";
 
 export async function GET(request: Request) {
   try {
-    await connectToDB()
-    const { searchParams } = new URL(request.url)
-    const query = searchParams.get("q") || ""
-    const tags = searchParams.get("tags") ? searchParams.get("tags")?.split(",") : []
+    await connectToDB();
 
-    const filter: any = {}
+    const { searchParams } = new URL(request.url);
+    const query = (searchParams.get("q") || "").trim();
+    const category = searchParams.get("category") || "";
 
-    if (query) {
-      filter.$or = [
-        { title: { $regex: query, $options: "i" } },
-        { prompt: { $regex: query, $options: "i" } },
-        { sampleResult: { $regex: query, $options: "i" } },
-      ]
-    }
+    // Build regex for query if present
+    const regex = query ? new RegExp(query, "i") : null;
 
-    if (tags && tags.length > 0) {
-      filter.tags = { $in: tags.map((tag) => new RegExp(tag, "i")) }
-    }
+    // Build $or filter for search text
+    const orFilter = regex
+      ? [
+          { title: { $regex: regex } },
+          { prompt: { $regex: regex } },
+          { sampleResult: { $regex: regex } },
+          { tags: { $elemMatch: { $regex: regex } } },
+          { "creator.username": { $regex: regex } },
+        ]
+      : [];
+
+    // Build final filter
+    const filter: any = {};
+    if (orFilter.length > 0) filter.$or = orFilter;
+    if (category) filter.category = category;
 
     const prompts = await Prompt.find(filter)
-      .populate("creator", "username email image")
+      .populate("creator", "username image")
       .sort({ createdAt: -1 })
-      .limit(20) // Limit results for search
+      .limit(20);
 
-    return NextResponse.json(prompts)
+    return NextResponse.json({ prompts });
   } catch (error) {
-    console.error("Error searching prompts:", error)
-    return NextResponse.json({ error: "Failed to search prompts" }, { status: 500 })
+    console.error("Error searching prompts:", error);
+    return NextResponse.json({ error: "Failed to search prompts" }, { status: 500 });
   }
 }
