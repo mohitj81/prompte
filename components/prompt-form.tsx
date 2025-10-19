@@ -1,6 +1,5 @@
 "use client"
 
-import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -40,15 +39,40 @@ export default function PromptForm({
     prompt: initialData?.prompt || "",
     tags: initialData?.tags || [],
     sampleResult: initialData?.sampleResult || "",
-    category: initialData?.category || "other",
+    category: initialData?.category || "",
   })
 
   const [tagInput, setTagInput] = useState("")
+  const [isPredicting, setIsPredicting] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.title.trim() || !formData.prompt.trim()) return
-    onSubmit(formData)
+
+    setIsPredicting(true)
+
+    try {
+      // Call Python ML API to predict category
+      const response = await fetch("/api/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: formData.prompt }),
+      })
+
+      const data = await response.json()
+      const predictedCategory = data.predicted_category || "other"
+
+      // Update category in formData
+      const finalData = { ...formData, category: predictedCategory }
+
+      // Call the original onSubmit with predicted category
+      onSubmit(finalData)
+    } catch (err) {
+      console.error("Error predicting category:", err)
+      onSubmit({ ...formData, category: "other" })
+    } finally {
+      setIsPredicting(false)
+    }
   }
 
   const addTag = () => {
@@ -103,9 +127,6 @@ export default function PromptForm({
               rows={6}
               required
             />
-            <p className="text-sm text-gray-500">
-              Be specific and clear. Include any context or instructions that would help others use your prompt effectively.
-            </p>
           </div>
 
           {/* Sample Result */}
@@ -118,7 +139,6 @@ export default function PromptForm({
               onChange={(e) => setFormData((prev) => ({ ...prev, sampleResult: e.target.value }))}
               rows={4}
             />
-            <p className="text-sm text-gray-500">Show others what kind of output your prompt generates.</p>
           </div>
 
           {/* Tags */}
@@ -153,39 +173,24 @@ export default function PromptForm({
                 ))}
               </div>
             )}
-            <p className="text-sm text-gray-500">Add relevant tags to help others discover your prompt.</p>
           </div>
 
-          {/* Category */}
-          <div className="space-y-2">
-            <Label htmlFor="category">Category</Label>
-            <select
-              id="category"
-              value={formData.category}
-              onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
-              className="w-full border rounded p-2"
-            >
-              <option value="writing">Writing</option>
-              <option value="coding">Coding</option>
-              <option value="marketing">Marketing</option>
-              <option value="design">Design</option>
-              <option value="business">Business</option>
-              <option value="education">Education</option>
-              <option value="entertainment">Entertainment</option>
-              <option value="productivity">Productivity</option>
-              <option value="research">Research</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
+          {/* Predicted Category Display */}
+          {formData.category && (
+            <div className="space-y-2">
+              <Label>Predicted Category</Label>
+              <Input value={formData.category} readOnly className="bg-gray-100" />
+            </div>
+          )}
 
           {/* Submit */}
           <div className="flex gap-4 pt-4">
             <Button
               type="submit"
-              disabled={isSubmitting || !formData.title.trim() || !formData.prompt.trim()}
+              disabled={isPredicting || isSubmitting || !formData.title.trim() || !formData.prompt.trim()}
               className="flex-1"
             >
-              {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {(isPredicting || isSubmitting) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {submitButtonText}
             </Button>
           </div>
