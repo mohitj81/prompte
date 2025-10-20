@@ -17,7 +17,7 @@ interface Prompt {
   title: string
   prompt: string
   tags: string[]
-  creator: {
+  creator?: {  // Made optional
     _id: string
     username: string
     email: string
@@ -26,7 +26,7 @@ interface Prompt {
   likes: string[]
   createdAt: string
   sampleResult?: string
-  sampleOutputImage?: string // Added for image display
+  sampleOutputImage?: string
   category?: string
   difficulty?: string
   commentCount?: number
@@ -98,7 +98,8 @@ export default function PromptCard({
     }
   }
 
-  const isOwner = currentUserId === prompt.creator._id
+  // ✅ Safe ownership check
+  const isOwner = currentUserId && prompt.creator ? currentUserId === prompt.creator._id : false
 
   return (
     <Card className="group hover:shadow-lg transition-all duration-300 border-0 shadow-md bg-white dark:bg-gray-800 animate-fade-in">
@@ -107,11 +108,11 @@ export default function PromptCard({
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-3">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={prompt.creator.image || "/placeholder-user.jpg"} alt={prompt.creator.username} />
-                <AvatarFallback>{prompt.creator.username.charAt(0).toUpperCase()}</AvatarFallback>
+                <AvatarImage src={prompt.creator?.image || "/placeholder-user.jpg"} alt={prompt.creator?.username || "Unknown"} />
+                <AvatarFallback>{prompt.creator?.username?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
               </Avatar>
               <div>
-                <p className="font-medium text-gray-900 dark:text-white">{prompt.creator.username}</p>
+                <p className="font-medium text-gray-900 dark:text-white">{prompt.creator?.username || "Unknown User"}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   {formatDistanceToNow(new Date(prompt.createdAt), { addSuffix: true })}
                 </p>

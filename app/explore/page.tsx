@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import PromptCard from "@/components/prompt-card"
 import AdvancedFilters from "@/components/advanced-filters"
@@ -33,16 +34,19 @@ interface Prompt {
 
 export default function ExplorePage() {
   const { data: session } = useSession()
+  const searchParams = useSearchParams()
+  const { toast } = useToast()
+
+  const categoryParam = searchParams.get("category") // read ?category=
   const [prompts, setPrompts] = useState<Prompt[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [filters, setFilters] = useState({
-    category: "",
+    category: categoryParam || "",
     difficulty: "",
     isTemplate: false,
     sortBy: "latest",
   })
-  const { toast } = useToast()
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500)
 
@@ -57,9 +61,7 @@ export default function ExplorePage() {
       if (filters.sortBy) queryParams.append("sortBy", filters.sortBy)
 
       const res = await fetch(`/api/prompt?${queryParams.toString()}`)
-      if (!res.ok) {
-        throw new Error("Failed to fetch prompts")
-      }
+      if (!res.ok) throw new Error("Failed to fetch prompts")
       const data = await res.json()
       setPrompts(data)
     } catch (error) {
@@ -80,13 +82,10 @@ export default function ExplorePage() {
 
   const handleLike = async (promptId: string) => {
     try {
-      const res = await fetch(`/api/prompt/${promptId}/like`, {
-        method: "POST",
-      })
-      if (!res.ok) {
-        throw new Error("Failed to like/unlike prompt")
-      }
+      const res = await fetch(`/api/prompt/${promptId}/like`, { method: "POST" })
+      if (!res.ok) throw new Error("Failed to like/unlike prompt")
       const data = await res.json()
+
       setPrompts((prev) =>
         prev.map((p) =>
           p._id === promptId
@@ -96,12 +95,15 @@ export default function ExplorePage() {
                   ? [...p.likes, session?.user?.id]
                   : p.likes.filter((id) => id !== session?.user?.id),
               }
-            : p,
-        ),
+            : p
+        )
       )
+
       toast({
         title: data.isLiked ? "Liked!" : "Unliked!",
-        description: data.isLiked ? "Prompt added to your likes." : "Prompt removed from your likes.",
+        description: data.isLiked
+          ? "Prompt added to your likes."
+          : "Prompt removed from your likes.",
       })
     } catch (error) {
       console.error("Error liking prompt:", error)
@@ -115,16 +117,15 @@ export default function ExplorePage() {
 
   const handleSave = async (promptId: string) => {
     try {
-      const res = await fetch(`/api/prompt/${promptId}/save`, {
-        method: "POST",
-      })
-      if (!res.ok) {
-        throw new Error("Failed to save/unsave prompt")
-      }
+      const res = await fetch(`/api/prompt/${promptId}/save`, { method: "POST" })
+      if (!res.ok) throw new Error("Failed to save/unsave prompt")
       const data = await res.json()
+
       toast({
         title: data.isSaved ? "Saved!" : "Unsaved!",
-        description: data.isSaved ? "Prompt added to your saved list." : "Prompt removed from your saved list.",
+        description: data.isSaved
+          ? "Prompt added to your saved list."
+          : "Prompt removed from your saved list.",
       })
     } catch (error) {
       console.error("Error saving prompt:", error)
@@ -143,7 +144,7 @@ export default function ExplorePage() {
   return (
     <section className="container mx-auto px-4 py-8 md:py-12">
       <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-8 text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600 animate-fade-in-up">
-        Explore Prompts
+        {filters.category ? `${filters.category} Prompts` : "Explore Prompts"}
       </h1>
 
       <div className="flex flex-col md:flex-row gap-6 mb-8">

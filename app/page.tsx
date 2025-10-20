@@ -248,8 +248,12 @@ export default function HomePage() {
           <p className="text-center text-gray-600 dark:text-gray-400 py-8">No categories found yet.</p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {popularCategories.map((category, index) => (
-              <Link key={category._id} href={`/explore?category=${category._id}`} className="block">
+            {popularCategories.map((category) => (
+              <Link
+                key={category._id}
+                href={`/explore?category=${encodeURIComponent(category._id)}`}
+                className="block"
+              >
                 <Card className="flex flex-col items-center justify-center p-4 text-center shadow-md border-0 bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-blue-900/10 dark:to-purple-900/10 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
                   <div className="w-12 h-12 flex items-center justify-center rounded-full bg-blue-100/50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 mb-3">
                     <Lightbulb className="w-6 h-6" />
