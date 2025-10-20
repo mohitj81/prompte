@@ -38,7 +38,7 @@ const PromptSchema = new Schema(
     },
     difficulty: {
   type: String,
-  enum: ["beginner", "medium", "hard"],
+  enum: ["beginner", "medium", "advanced"],
   default: "beginner",
   required: true,
 },
