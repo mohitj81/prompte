@@ -1,39 +1,73 @@
-import { NextResponse } from "next/server"
-import { generateText } from "ai"
-import { openai } from "@ai-sdk/openai"
+import { NextResponse } from "next/server";
+import OpenAI from "openai";
 
 export async function POST(request: Request) {
   try {
-    const { originalPrompt, tone, style, subjectChange, additionalInstructions } = await request.json()
+    const body = await request.json();
+    console.log("Remix request body:", body);
 
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json({ error: "OPENAI_API_KEY is not set" }, { status: 500 })
+    const originalPrompt = body.prompt;
+    const options = body.options || {};
+
+    const tone = options.tone || "Keep original tone";
+    const style = options.style || "Keep original style";
+    const subjectChange =
+      options.subject || "No specific subject change, focus on tone/style.";
+    const additionalInstructions = options.constraints || "None.";
+
+    if (!originalPrompt || originalPrompt.trim() === "") {
+      return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
     }
 
-    const prompt = `
-      You are an AI prompt remixer. Your goal is to transform an existing AI prompt based on new parameters.
-      Here is the original prompt:
-      "${originalPrompt}"
+    if (!process.env.HF_TOKEN) {
+      console.error("❌ Missing Hugging Face API key (HF_TOKEN)");
+      return NextResponse.json(
+        { error: "HF_TOKEN is not set in environment variables" },
+        { status: 500 }
+      );
+    }
 
-      Please remix this prompt with the following changes:
-      - **Tone:** ${tone || "Keep original tone"}
-      - **Style:** ${style || "Keep original style"}
-      - **Subject Change:** ${subjectChange || "No specific subject change, focus on tone/style."}
-      - **Additional Instructions:** ${additionalInstructions || "None."}
+    // ✅ Construct the remix instruction prompt
+    const remixPrompt = `
+You are an AI prompt remixer. Your goal is to transform an existing AI prompt based on new parameters.
 
-      Generate the remixed prompt. Ensure it is a complete and coherent prompt ready for an AI model.
-      Do not include any conversational text or introductions/conclusions outside of the remixed prompt itself. Just provide the remixed prompt.
-    `
+Original prompt:
+"${originalPrompt}"
 
-    const { text } = await generateText({
-      model: openai("gpt-4o"), // Using GPT-4o
-      prompt: prompt,
-      temperature: 0.7, // A moderate temperature for creative remixing
-    })
+Please remix this prompt with the following changes:
+- Tone: ${tone}
+- Style: ${style}
+- Subject Change: ${subjectChange}
+- Additional Instructions: ${additionalInstructions}
 
-    return NextResponse.json({ remixedPrompt: text })
+Output only the remixed prompt text — no commentary, no intros or outros.
+`;
+
+    // ✅ Initialize OpenAI client but use Hugging Face as backend
+    const client = new OpenAI({
+      apiKey: process.env.HF_TOKEN,
+      baseURL: "https://router.huggingface.co/v1",
+    });
+
+    console.log("Sending remix request to Hugging Face model...");
+
+    // ✅ Use Gemma model via Nebius (just like your AI Writer)
+    const completion = await client.chat.completions.create({
+      model: "google/gemma-2-2b-it:nebius",
+      messages: [{ role: "user", content: remixPrompt }],
+      max_tokens: 256,
+    });
+
+    const remixedPrompt =
+      completion.choices[0].message?.content?.trim() || "No remixed prompt generated.";
+
+    console.log("✅ Remix successful!");
+    return NextResponse.json({ remixedPrompt });
   } catch (error) {
-    console.error("Error remixing prompt with AI:", error)
-    return NextResponse.json({ error: "Failed to remix prompt with AI" }, { status: 500 })
+    console.error("❌ Error remixing prompt with Hugging Face:", error);
+    return NextResponse.json(
+      { error: "Failed to remix prompt with Hugging Face" },
+      { status: 500 }
+    );
   }
 }

@@ -19,11 +19,11 @@ interface RemixOptions {
 }
 
 interface PromptRemixToolProps {
-  originalPrompt: string
+  originalPrompt?: string
 }
 
-export default function PromptRemixTool({ originalPrompt }: PromptRemixToolProps) {
-  const [prompt, setPrompt] = useState(originalPrompt)
+export default function PromptRemixTool({ originalPrompt = "" }: PromptRemixToolProps) {
+  const [prompt, setPrompt] = useState(originalPrompt || "")
   const [remixedPrompt, setRemixedPrompt] = useState("")
   const [isRemixing, setIsRemixing] = useState(false)
   const [remixOptions, setRemixOptions] = useState<RemixOptions>({})
@@ -38,13 +38,12 @@ export default function PromptRemixTool({ originalPrompt }: PromptRemixToolProps
   ]
 
   const remixPrompt = async (options: RemixOptions = {}) => {
+    if (!prompt?.trim()) return
     setIsRemixing(true)
     try {
       const response = await fetch("/api/prompt/remix", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt,
           options: { ...remixOptions, ...options },
@@ -53,11 +52,17 @@ export default function PromptRemixTool({ originalPrompt }: PromptRemixToolProps
 
       if (response.ok) {
         const data = await response.json()
-        setRemixedPrompt(data.remixed)
-        setRemixHistory((prev) => [data.remixed, ...prev.slice(0, 4)])
+        setRemixedPrompt(data.remixedPrompt)
+        setRemixHistory((prev) => [data.remixedPrompt, ...prev.slice(0, 4)])
         toast({
           title: "🧩 Prompt Remixed!",
           description: "Your prompt has been successfully transformed",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to remix prompt",
+          variant: "destructive",
         })
       }
     } catch (error) {
@@ -86,11 +91,6 @@ export default function PromptRemixTool({ originalPrompt }: PromptRemixToolProps
         variant: "destructive",
       })
     }
-  }
-
-  const useHistoryItem = (historyPrompt: string) => {
-    setRemixedPrompt(historyPrompt)
-    setPrompt(historyPrompt)
   }
 
   return (
